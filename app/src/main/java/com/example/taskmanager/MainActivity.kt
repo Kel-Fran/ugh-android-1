@@ -30,6 +30,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -99,6 +100,18 @@ fun TaskManagerScreen(modifier: Modifier = Modifier) {
     val tasks = remember { mutableStateListOf<Task>() }
     var filter by remember { mutableStateOf(FilterType.ALL) }
 
+    val filtered = remember {
+        derivedStateOf {
+            tasks.filter {
+                when (filter) {
+                    FilterType.ALL -> true
+                    FilterType.COMPLETE -> it.done
+                    FilterType.INCOMPLETE -> !it.done
+                }
+            }
+        }
+    }
+
     val ctx = LocalContext.current
 
     Column(
@@ -155,19 +168,15 @@ fun TaskManagerScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        LazyColumn(
+        if (tasks.isEmpty()) Text("no tasks")
+        else if (filtered.value.isEmpty()) Text("no task matching filter")
+        else LazyColumn(
             Modifier
                 .fillMaxWidth()
                 .weight(1f),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(items = tasks.filter {
-                when (filter) {
-                    FilterType.ALL -> true
-                    FilterType.COMPLETE -> it.done
-                    FilterType.INCOMPLETE -> !it.done
-                }
-            }, key = { it.id }) { TaskCard(it, tasks) }
+            items(items = filtered.value, key = { it.id }) { TaskCard(it, tasks) }
         }
     }
 }
